@@ -10,9 +10,9 @@ function touchScale(){const m=svg.getScreenCTM();return m?Math.hypot(m.a,m.b)||1
 function hit(cx,cy,r,kind,extra={}){r=Math.max(r,(kind==='angle'?48:kind==='position'?32:24)/touchScale());return add('circle',{cx,cy,r,fill:'transparent','data-drag':kind,...extra});}
 function beam(pivot,rotation=0){const px=X(pivot);add('rect',{x:px-68,y:378,width:136,height:16,rx:5,fill:'#456170'});add('rect',{x:px-6,y:Y,width:12,height:188,rx:4,fill:'#7d929b'});const g=add('g',{transform:`rotate(${rotation*180/Math.PI} ${px} ${Y})`});add('rect',{x:60,y:Y-12,width:600,height:24,rx:3,fill:'#edcf93',stroke:'#957a47'},undefined,g);for(let p=0;p<=100;p+=5){const distance=Math.abs(p-pivot),major=distance%10===0;line(X(p),Y-12,X(p),Y+(major?0:-5),{stroke:'#7d653d','stroke-width':1},g);if(major)text(X(p),Y+34,String(distance),{'font-size':20,'font-weight':600},g);}add('circle',{cx:px,cy:Y,r:10,fill:'#008b91',stroke:'white','stroke-width':3});return g;}
 function render(){svg.replaceChildren();if(s.mode==='force'){svg.setAttribute('viewBox','0 0 720 440');svg.style.maxHeight='58vh';renderForce();}else renderWeights();}
-function renderForce(){beam(s.pivot);const px=X(s.pos),dx=Math.cos(s.angle),dy=Math.sin(s.angle),edgeX=Math.abs(dx)<1e-6?1000:(dx>0?696-px:px-24)/Math.abs(dx),edgeY=Math.abs(dy)<1e-6?1000:(dy>0?410-Y:Y-84)/Math.abs(dy),len=Math.min(72+s.force*3,edgeX,edgeY),tip={x:px+dx*len,y:Y+dy*len};
+function renderForce(){beam(s.pivot);const px=X(s.pos),dx=Math.cos(s.angle),dy=Math.sin(s.angle),edgeX=Math.abs(dx)<1e-6?1000:(dx>0?696-px:px-24)/Math.abs(dx),edgeY=Math.abs(dy)<1e-6?1000:(dy>0?410-Y:Y-84)/Math.abs(dy),len=Math.min(s.force*9,edgeX,edgeY),head=Math.min(29,len*.45),wing=Math.min(7,len*.12),tip={x:px+dx*len,y:Y+dy*len};
  if(s.shown){const pivot=X(s.pivot),dot=(pivot-px)*dx,fx=px+dot*dx,fy=Y+dot*dy;line(px-dx*900,Y-dy*900,px+dx*900,Y+dy*900,{stroke:'#e68b35','stroke-dasharray':'7 7',opacity:.5});line(pivot,Y,fx,fy,{stroke:'#008b91','stroke-width':4,'stroke-dasharray':'6 5'});if(Math.hypot(pivot-fx,Y-fy)>12){const nx=(pivot-fx)/Math.hypot(pivot-fx,Y-fy),ny=(Y-fy)/Math.hypot(pivot-fx,Y-fy);add('path',{d:`M ${fx+dx*10} ${fy+dy*10} l ${nx*10} ${ny*10} l ${-dx*10} ${-dy*10}`,fill:'none',stroke:'#008b91'});}}
- line(px,Y,tip.x,tip.y,{stroke:'transparent','stroke-width':96/touchScale(),'stroke-linecap':'round','data-drag':'angle'});line(px,Y,tip.x-dx*25,tip.y-dy*25,{stroke:'#f08024','stroke-width':5,'data-drag':'angle'});add('polygon',{points:`${tip.x},${tip.y} ${tip.x-dx*29-dy*7},${tip.y-dy*29+dx*7} ${tip.x-dx*29+dy*7},${tip.y-dy*29-dx*7}`,fill:'#f08024','data-drag':'angle'});add('circle',{cx:px,cy:Y,r:11,fill:'white',stroke:'#f08024','stroke-width':4});hit(tip.x,tip.y,26,'angle');hit(px,Y,23,'position');hit(X(s.pivot),Y+65,30,'pivot');text(X(s.pivot),Y+75,'↔',{'font-size':28,fill:'#008b91'});text(670,420,'cm',{'font-size':13});
+ line(px,Y,tip.x,tip.y,{stroke:'transparent','stroke-width':96/touchScale(),'stroke-linecap':'round','data-drag':'angle'});line(px,Y,tip.x-dx*head*.8,tip.y-dy*head*.8,{stroke:'#f08024','stroke-width':5,'data-drag':'angle'});add('polygon',{points:`${tip.x},${tip.y} ${tip.x-dx*head-dy*wing},${tip.y-dy*head+dx*wing} ${tip.x-dx*head+dy*wing},${tip.y-dy*head-dx*wing}`,fill:'#f08024','data-drag':'angle'});add('circle',{cx:px,cy:Y,r:11,fill:'white',stroke:'#f08024','stroke-width':4});hit(tip.x,tip.y,26,'angle');hit(px,Y,23,'position');hit(X(s.pivot),Y+65,30,'pivot');text(X(s.pivot),Y+75,'↔',{'font-size':28,fill:'#008b91'});text(670,420,'cm',{'font-size':13});
  // Keep annotation badges in a reserved band above every possible arrow.
  const label=(x,width,value,color)=>{const g=add('g',{'data-annotation':'true','pointer-events':'none'});add('rect',{x,y:18,width,height:42,rx:10,fill:'#fff',stroke:color,'stroke-width':1.5},undefined,g);text(x+width/2,45,value,{fill:color,'font-size':24,'font-weight':700},g);};
  label(26,170,`施力 ${s.force} N`,'#b8560b');
@@ -46,7 +46,7 @@ function renderWeights(){
  }
  if(s.adding)text(360,70,'點選刻度或砝碼下方，串掛一個砝碼',{fill:'#008b91'});
 }
-function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳槓桿上的圓點換施力位置 · 拖曳箭頭轉向':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#force-value').textContent=`${s.force} N`;$('#magnitude').value=s.force;$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);$('#result').innerHTML=`力臂 <strong>${p.arm.toFixed(3)} m</strong><br>力矩＝${p.arm.toFixed(3)} × ${s.force}≈<strong>${p.torque.toFixed(3)} N·m</strong><br>${p.direction}`;$('#remaining').textContent=`剩餘 ${20-total()} 個`;const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取一個 20 g 砝碼`;render();}
+function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);$('#result').innerHTML=`力臂 <strong>${p.arm.toFixed(3)} m</strong><br>力矩＝${p.arm.toFixed(3)} × ${s.force}≈<strong>${p.torque.toFixed(3)} N·m</strong><br>${p.direction}`;$('#remaining').textContent=`剩餘 ${20-total()} 個`;const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取一個 20 g 砝碼`;render();}
 function total(){return s.weights.reduce((n,w)=>n+w.count,0);}
 function place(pos){if(total()>=20)return;const w={id:++id,pos,count:1};s.weights.push(w);s.selected=w.id;s.adding=false;ui();}
 function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
@@ -69,14 +69,14 @@ svg.addEventListener('pointerdown',e=>{
   if(s.adding){place(weightPos(p));return;}
   if(kind==='weight'){startDrag(e,kind,Number(e.target.dataset.id));ui();}return;
  }
- if(!kind)return;startDrag(e,kind,0);
+ if(!kind)return;startDrag(e,kind,0);if(kind==='angle'){drag.initialForce=s.force;drag.initialRadius=Math.hypot(p.x-X(s.pos),p.y-Y);}
 });
 $('#tray').addEventListener('pointerdown',e=>{if(total()<20)startDrag(e,'new-weight',0);});
 let pendingFrame=false;
 document.addEventListener('pointermove',e=>{
  if(!drag)return;drag.moved ||= Math.hypot(e.clientX-drag.start.x,e.clientY-drag.start.y)>7;
  if(['weight','new-weight'].includes(drag.kind)){previewDrop(e);if(!pendingFrame){pendingFrame=true;requestAnimationFrame(()=>{pendingFrame=false;if(drag)render();});}return;}
- const p=point(e);if(drag.kind==='angle')s.angle=Math.atan2(p.y-Y,p.x-X(s.pos));if(drag.kind==='position')s.pos=snap(p.x);if(drag.kind==='pivot')s.pivot=snap(p.x);ui();
+ const p=point(e);if(drag.kind==='angle'){s.angle=Math.atan2(p.y-Y,p.x-X(s.pos));const radius=Math.hypot(p.x-X(s.pos),p.y-Y);s.force=clamp(Math.round((drag.initialForce+(radius-drag.initialRadius)/9)/5)*5,5,20);}if(drag.kind==='position')s.pos=snap(p.x);if(drag.kind==='pivot')s.pivot=snap(p.x);ui();
 });
 document.addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;
@@ -89,7 +89,7 @@ document.addEventListener('pointerup',e=>{
 });
 document.addEventListener('pointercancel',()=>{drag=null;floating.hidden=true;ui();});
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{s.mode=b.dataset.mode;s.adding=false;document.querySelectorAll('nav button').forEach(n=>n.classList.toggle('active',n===b));ui();});
-function setForce(v){s.force=clamp(v,0,20);ui();}$('#magnitude').oninput=e=>setForce(Number(e.target.value));$('#less').onclick=()=>setForce(s.force-.5);$('#more').onclick=()=>setForce(s.force+.5);$('#show').onclick=()=>{s.shown=true;ui();};$('#reset-force').onclick=()=>{Object.assign(s,{pivot:50,pos:80,angle:Math.PI/2,force:10,shown:false});ui();};
+$('#show').onclick=()=>{s.shown=true;ui();};$('#reset-force').onclick=()=>{Object.assign(s,{pivot:50,pos:80,angle:Math.PI/2,force:10,shown:false});ui();};
 $('#remove').onclick=()=>{s.weights=s.weights.filter(w=>w.id!==s.selected);s.selected=null;ui();};$('#reset-weights').onclick=()=>{s.weights=[];s.selected=null;s.adding=false;s.theta=0;s.velocity=0;ui();};
 function animate(now){const dt=Math.min((now-last)/1000||.016,.033);last=now;if(s.mode==='weights'&&!drag){const torque=weightTorque(s.weights);const target=torque===0?0:Math.sign(torque)*.20;const a=22*(target-s.theta)-4.5*s.velocity;s.velocity+=a*dt;s.theta+=s.velocity*dt;if(Math.abs(s.theta-target)<.0001&&Math.abs(s.velocity)<.0001){s.theta=target;s.velocity=0;}if(!drag)render();}requestAnimationFrame(animate);}ui();requestAnimationFrame(animate);
 
