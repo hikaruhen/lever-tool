@@ -74,7 +74,7 @@ let pendingFrame=false;
 document.addEventListener('pointermove',e=>{
  if(!drag)return;drag.moved ||= Math.hypot(e.clientX-drag.start.x,e.clientY-drag.start.y)>7;
  if(['weight','new-weight'].includes(drag.kind)){previewDrop(e);if(!pendingFrame){pendingFrame=true;requestAnimationFrame(()=>{pendingFrame=false;if(drag)render();});}return;}
- const p=point(e);if(drag.kind==='angle')s.angle=Math.atan2(p.y-Y,p.x-X(s.pos));if(drag.kind==='position')s.pos=snap(p.x);if(drag.kind==='pivot')s.pivot=snap(p.x);s.shown=false;ui();
+ const p=point(e);if(drag.kind==='angle')s.angle=Math.atan2(p.y-Y,p.x-X(s.pos));if(drag.kind==='position')s.pos=snap(p.x);if(drag.kind==='pivot')s.pivot=snap(p.x);ui();
 });
 document.addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;
@@ -87,6 +87,6 @@ document.addEventListener('pointerup',e=>{
 });
 document.addEventListener('pointercancel',()=>{drag=null;floating.hidden=true;ui();});
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{s.mode=b.dataset.mode;s.adding=false;document.querySelectorAll('nav button').forEach(n=>n.classList.toggle('active',n===b));ui();});
-function setForce(v){s.force=clamp(v,0,20);s.shown=false;ui();}$('#magnitude').oninput=e=>setForce(Number(e.target.value));$('#less').onclick=()=>setForce(s.force-.5);$('#more').onclick=()=>setForce(s.force+.5);$('#show').onclick=()=>{s.shown=true;ui();};$('#reset-force').onclick=()=>{Object.assign(s,{pivot:50,pos:80,angle:Math.PI/2,force:10,shown:false});ui();};
+function setForce(v){s.force=clamp(v,0,20);ui();}$('#magnitude').oninput=e=>setForce(Number(e.target.value));$('#less').onclick=()=>setForce(s.force-.5);$('#more').onclick=()=>setForce(s.force+.5);$('#show').onclick=()=>{s.shown=true;ui();};$('#reset-force').onclick=()=>{Object.assign(s,{pivot:50,pos:80,angle:Math.PI/2,force:10,shown:false});ui();};
 $('#remove').onclick=()=>{s.weights=s.weights.filter(w=>w.id!==s.selected);s.selected=null;ui();};$('#reset-weights').onclick=()=>{s.weights=[];s.selected=null;s.adding=false;s.theta=0;s.velocity=0;ui();};
 function animate(now){const dt=Math.min((now-last)/1000||.016,.033);last=now;if(s.mode==='weights'&&!drag){const torque=weightTorque(s.weights);const target=torque===0?0:Math.sign(torque)*.20;const a=22*(target-s.theta)-4.5*s.velocity;s.velocity+=a*dt;s.theta+=s.velocity*dt;if(Math.abs(s.theta-target)<.0001&&Math.abs(s.velocity)<.0001){s.theta=target;s.velocity=0;}if(!drag)render();}requestAnimationFrame(animate);}ui();requestAnimationFrame(animate);
