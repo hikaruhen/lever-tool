@@ -7,7 +7,7 @@ function add(tag,a,t,parent=svg){const n=el(tag,a,t);parent.append(n);return n;}
 function line(x1,y1,x2,y2,a={},p=svg){return add('line',{x1,y1,x2,y2,stroke:'#718791','stroke-width':2,...a},undefined,p);}
 function text(x,y,t,a={},p=svg){return add('text',{x,y,'text-anchor':'middle',fill:'#294459','font-size':16,...a},t,p);}
 function hit(cx,cy,r,kind,extra={}){return add('circle',{cx,cy,r,fill:'transparent','data-drag':kind,...extra});}
-function beam(pivot,rotation=0){const px=X(pivot);add('rect',{x:px-68,y:378,width:136,height:16,rx:5,fill:'#456170'});add('rect',{x:px-6,y:Y,width:12,height:188,rx:4,fill:'#7d929b'});const g=add('g',{transform:`rotate(${rotation*180/Math.PI} ${px} ${Y})`});add('rect',{x:60,y:Y-12,width:600,height:24,rx:3,fill:'#edcf93',stroke:'#957a47'},undefined,g);for(let p=0;p<=100;p+=5){line(X(p),Y-12,X(p),Y+(p%10===0?0:-5),{stroke:'#7d653d','stroke-width':1},g);if(p%10===0)text(X(p),Y+34,String(p),{'font-size':13},g);}add('circle',{cx:px,cy:Y,r:10,fill:'#008b91',stroke:'white','stroke-width':3});return g;}
+function beam(pivot,rotation=0){const px=X(pivot);add('rect',{x:px-68,y:378,width:136,height:16,rx:5,fill:'#456170'});add('rect',{x:px-6,y:Y,width:12,height:188,rx:4,fill:'#7d929b'});const g=add('g',{transform:`rotate(${rotation*180/Math.PI} ${px} ${Y})`});add('rect',{x:60,y:Y-12,width:600,height:24,rx:3,fill:'#edcf93',stroke:'#957a47'},undefined,g);for(let p=0;p<=100;p+=5){const distance=Math.abs(p-pivot),major=distance%10===0;line(X(p),Y-12,X(p),Y+(major?0:-5),{stroke:'#7d653d','stroke-width':1},g);if(major)text(X(p),Y+34,String(distance),{'font-size':13},g);}add('circle',{cx:px,cy:Y,r:10,fill:'#008b91',stroke:'white','stroke-width':3});return g;}
 function render(){svg.replaceChildren();if(s.mode==='force'){svg.setAttribute('viewBox','0 0 720 440');svg.style.maxHeight='58vh';renderForce();}else renderWeights();}
 function renderForce(){beam(s.pivot);const px=X(s.pos),dx=Math.cos(s.angle),dy=Math.sin(s.angle),edgeX=Math.abs(dx)<1e-6?1000:(dx>0?px-24:696-px)/Math.abs(dx),edgeY=Math.abs(dy)<1e-6?1000:(dy>0?Y-48:410-Y)/Math.abs(dy),len=Math.min(72+s.force*3,edgeX,edgeY),tail={x:px-dx*len,y:Y-dy*len};
  if(s.shown){const pivot=X(s.pivot),dot=(pivot-px)*dx,fx=px+dot*dx,fy=Y+dot*dy;line(px-dx*900,Y-dy*900,px+dx*900,Y+dy*900,{stroke:'#e68b35','stroke-dasharray':'7 7',opacity:.5});line(pivot,Y,fx,fy,{stroke:'#008b91','stroke-width':4,'stroke-dasharray':'6 5'});text((pivot+fx)/2+15,(Y+fy)/2+62,`力臂 ${(forcePhysics(s.pivot,s.pos,s.angle,s.force).arm*100).toFixed(1)} cm`,{fill:'#008b91','font-size':16});if(Math.hypot(pivot-fx,Y-fy)>12){const nx=(pivot-fx)/Math.hypot(pivot-fx,Y-fy),ny=(Y-fy)/Math.hypot(pivot-fx,Y-fy);add('path',{d:`M ${fx+dx*10} ${fy+dy*10} l ${nx*10} ${ny*10} l ${-dx*10} ${-dy*10}`,fill:'none',stroke:'#008b91'});}}
@@ -34,7 +34,7 @@ function renderWeights(){
   if(drag.valid){const pos=drag.previewPos,top=weightPoint(pos),others=chainLayout(drag.kind==='weight'?drag.id:null).filter(w=>w.pos===pos);const y=top.y+45+others.length*50;
    line(top.x,top.y-40,top.x,y+38,{stroke:'#008b91','stroke-width':3,'stroke-dasharray':'6 5',opacity:.6});
    add('circle',{cx:top.x,cy:top.y,r:15,fill:'#c6eeeb',stroke:'#008b91','stroke-width':3});
-   drawWeight(top.x,y,{preview:true});text(top.x,top.y-53,`${50+pos*5} cm`,{fill:'#008b91','font-size':21,'font-weight':700});
+   drawWeight(top.x,y,{preview:true});text(top.x,top.y-53,`${Math.abs(pos)*5} cm`,{fill:'#008b91','font-size':21,'font-weight':700});
   }
  }
  if(s.adding)text(360,70,'點選刻度或砝碼下方，串掛一個砝碼',{fill:'#008b91'});
