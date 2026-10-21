@@ -46,7 +46,7 @@ function renderWeights(){
  }
  if(s.adding)text(360,70,'點選刻度或砝碼下方，串掛一個砝碼',{fill:'#008b91'});
 }
-function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);$('#result').innerHTML=`力臂 <strong>${p.arm.toFixed(3)} m</strong><br>力矩＝${p.arm.toFixed(3)} × ${s.force}≈<strong>${p.torque.toFixed(3)} N·m</strong><br>${p.direction}`;$('#remaining').textContent=`剩餘 ${20-total()} 個`;const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取一個 20 g 砝碼`;render();}
+function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);$('#result').innerHTML=`力臂 <strong>${(p.arm*100).toFixed(1)} cm</strong><br>力矩＝${(p.arm*100).toFixed(1)} × ${s.force}≈<strong>${(p.torque*100).toFixed(1)} N·cm</strong><br>${p.direction}`;$('#remaining').textContent=`剩餘 ${20-total()} 個`;const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取一個 20 g 砝碼`;render();}
 function total(){return s.weights.reduce((n,w)=>n+w.count,0);}
 function place(pos){if(total()>=20)return;const w={id:++id,pos,count:1};s.weights.push(w);s.selected=w.id;s.adding=false;ui();}
 function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
