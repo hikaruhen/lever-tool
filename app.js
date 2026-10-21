@@ -1,4 +1,4 @@
-import{clamp,forcePhysics,weightTorque,formatMeasure,snapForceAngle}from './physics.js?v=14';
+import{clamp,forcePhysics,weightTorque,formatMeasure,snapForceAngle}from './physics.js?v=15';
 const $=s=>document.querySelector(s),svg=$('#scene');
 const s={mode:'force',pivot:50,pos:80,angle:Math.PI/2,force:10,shown:false,weights:[],selected:null,adding:false,theta:0,velocity:0};
 const items={w20:{mass:20,stock:20,label:'20 g 砝碼'},w10:{mass:10,stock:20,label:'10 g 砝碼'},giftA:{mass:75,stock:1,label:'神祕禮物 A'},giftB:{mass:200,stock:1,label:'神祕禮物 B'}};
@@ -47,7 +47,7 @@ function renderWeights(){
  }
  if(s.adding)text(360,70,`點選刻度，掛上${items[s.adding].label}`,{fill:'#008b91'});
 }
-function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);$('#result').innerHTML=`力臂 <strong>${formatMeasure(p.arm*100)} cm</strong><br>力矩＝${formatMeasure(p.arm*100)} × ${s.force}≈<strong>${formatMeasure(p.torque*100)} N·cm</strong><br>${p.direction}`;$('#remaining').textContent='';document.querySelectorAll('[data-stock]').forEach(n=>{const key=n.dataset.stock;const left=items[key].stock-s.weights.filter(w=>w.item===key).length;n.textContent=`剩餘 ${left} 個`;n.closest('button').disabled=left===0;});const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取：${items[w.item].label}`;render();}
+function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);if(Number(formatMeasure(p.arm*100))===0){p.arm=0;p.torque=0;p.direction='無轉動力矩';}$('#result').innerHTML=`力臂 <strong>${formatMeasure(p.arm*100)} cm</strong><br>力矩＝${formatMeasure(p.arm*100)} × ${s.force}≈<strong>${formatMeasure(p.torque*100)} N·cm</strong><br>${p.direction}`;$('#remaining').textContent='';document.querySelectorAll('[data-stock]').forEach(n=>{const key=n.dataset.stock;const left=items[key].stock-s.weights.filter(w=>w.item===key).length;n.textContent=`剩餘 ${left} 個`;n.closest('button').disabled=left===0;});const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取：${items[w.item].label}`;render();}
 function total(){return s.weights.reduce((n,w)=>n+w.count,0);}
 function place(pos,item=s.adding||'w20'){if(s.weights.filter(w=>w.item===item).length>=items[item].stock)return;const w={id:++id,pos,count:1,item,mass:items[item].mass};s.weights.push(w);s.selected=w.id;s.adding=false;ui();}
 function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
