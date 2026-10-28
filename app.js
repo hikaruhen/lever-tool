@@ -21,8 +21,8 @@ function renderForce(){beam(s.pivot);const px=X(s.pos),dx=Math.cos(s.angle),dy=M
 }
 
 function weightPoint(pos){const r=pos*30;return{x:360+r*Math.cos(s.theta),y:Y+r*Math.sin(s.theta)};}
-function chainLayout(excludeId=null){
- const levels=new Map();return s.weights.filter(w=>w.id!==excludeId).map(w=>{const level=levels.get(w.pos)||0;levels.set(w.pos,level+1);const p=weightPoint(w.pos);return{...w,x:p.x,y:p.y+45+level*50};});
+function chainLayout(excludeIds=[]){
+ const levels=new Map();return s.weights.filter(w=>!excludeIds.includes(w.id)).map(w=>{const level=levels.get(w.pos)||0;levels.set(w.pos,level+1);const p=weightPoint(w.pos);return{...w,x:p.x,y:p.y+45+level*50};});
 }
 function drawWeight(x,y,{id,selected=false,preview=false,item='w20'}={}){
  const g=add('g',{'data-weight':id??'preview',opacity:preview?.65:1,'pointer-events':preview?'none':'auto'});
@@ -39,15 +39,15 @@ function renderWeights(){
  const positions=new Set();for(const w of layout){if(!positions.has(w.pos)){const p=weightPoint(w.pos);line(p.x,p.y+12,p.x,w.y-20,{stroke:'#485d68'});positions.add(w.pos);}drawWeight(w.x,w.y,{id:w.id,selected:w.id===s.selected,item:w.item});}
  if(drag&&['weight','new-weight'].includes(drag.kind)&&drag.moved){
   const p=drag.pointer;
-  if(drag.valid){const pos=drag.previewPos,top=weightPoint(pos),others=chainLayout(drag.kind==='weight'?drag.id:null).filter(w=>w.pos===pos);const y=top.y+45+others.length*50;
-   line(top.x,top.y-40,top.x,y+38,{stroke:'#008b91','stroke-width':3,'stroke-dasharray':'6 5',opacity:.6});
+  if(drag.valid){const pos=drag.previewPos,top=weightPoint(pos),others=chainLayout(drag.ids).filter(w=>w.pos===pos),moving=drag.kind==='weight'?drag.ids.map(id=>s.weights.find(w=>w.id===id)):[{item:drag.item}];const y=top.y+45+others.length*50;
+   line(top.x,top.y-40,top.x,y+(moving.length-1)*50+38,{stroke:'#008b91','stroke-width':3,'stroke-dasharray':'6 5',opacity:.6});
    add('circle',{cx:top.x,cy:top.y,r:15,fill:'#c6eeeb',stroke:'#008b91','stroke-width':3});
-   drawWeight(top.x,y,{preview:true,item:drag.item||s.weights.find(w=>w.id===drag.id)?.item});text(top.x,top.y-53,`${Math.abs(pos)*5} cm`,{fill:'#008b91','font-size':21,'font-weight':700});
+   moving.forEach((w,i)=>drawWeight(top.x,y+i*50,{preview:true,item:w.item}));text(top.x,top.y-53,`${Math.abs(pos)*5} cm`,{fill:'#008b91','font-size':21,'font-weight':700});
   }
  }
  if(s.adding)text(360,70,`點選刻度，掛上${items[s.adding].label}`,{fill:'#008b91'});
 }
-function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'逐顆拖曳串掛 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);if(Number(formatMeasure(p.arm*100))===0){p.arm=0;p.torque=0;p.direction='無轉動力矩';}$('#result').innerHTML=`力臂 <strong>${formatMeasure(p.arm*100)} cm</strong><br>力矩＝${formatMeasure(p.arm*100)} × ${s.force}≈<strong>${formatMeasure(p.torque*100)} N·cm</strong><br>${p.direction}`;$('#remaining').textContent='';document.querySelectorAll('[data-stock]').forEach(n=>{const key=n.dataset.stock;const left=items[key].stock-s.weights.filter(w=>w.item===key).length;n.textContent=`剩餘 ${left} 個`;n.closest('button').disabled=left===0;});const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取：${items[w.item].label}`;render();}
+function ui(){const force=s.mode==='force';$('#force-controls').hidden=!force;$('#weight-controls').hidden=force;$('#hint').textContent=force?'拖曳圓點換位置 · 拖曳箭頭調整方向與力量（每段 5 N）':'拖曳最上方可移動整串 · 虛線預示位置，放開後移動';$('#result').hidden=!s.shown;const p=forcePhysics(s.pivot,s.pos,s.angle,s.force);if(Number(formatMeasure(p.arm*100))===0){p.arm=0;p.torque=0;p.direction='無轉動力矩';}$('#result').innerHTML=`力臂 <strong>${formatMeasure(p.arm*100)} cm</strong><br>力矩＝${formatMeasure(p.arm*100)} × ${s.force}≈<strong>${formatMeasure(p.torque*100)} N·cm</strong><br>${p.direction}`;$('#remaining').textContent='';document.querySelectorAll('[data-stock]').forEach(n=>{const key=n.dataset.stock;const left=items[key].stock-s.weights.filter(w=>w.item===key).length;n.textContent=`剩餘 ${left} 個`;n.closest('button').disabled=left===0;});const w=s.weights.find(w=>w.id===s.selected);$('#selection').hidden=!w;if(w)$('#selected-label').textContent=`已選取：${items[w.item].label}`;render();}
 function total(){return s.weights.reduce((n,w)=>n+w.count,0);}
 function place(pos,item=s.adding||'w20'){if(s.weights.filter(w=>w.item===item).length>=items[item].stock)return;const w={id:++id,pos,count:1,item,mass:items[item].mass};s.weights.push(w);s.selected=w.id;s.adding=false;ui();}
 function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
@@ -62,7 +62,7 @@ function previewDrop(e){
  floating.hidden=!drag.moved||drag.valid;floating.style.left=`${e.clientX}px`;floating.style.top=`${e.clientY-48}px`;
  floating.classList.toggle('invalid',!drag.valid&&!drag.returning);floating.textContent=drag.returning?'放回砝碼盒':items[drag.item||s.weights.find(w=>w.id===drag.id)?.item||'w20'].label;
 }
-function startDrag(e,kind,idValue){e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);drag={kind,id:idValue,start:{x:e.clientX,y:e.clientY},moved:false,pointer:point(e),valid:false};if(kind==='weight')s.selected=idValue;}
+function startDrag(e,kind,idValue){e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);drag={kind,id:idValue,start:{x:e.clientX,y:e.clientY},moved:false,pointer:point(e),valid:false,ids:[]};if(kind==='weight'){s.selected=idValue;const w=s.weights.find(w=>w.id===idValue),chain=s.weights.filter(v=>v.pos===w.pos);drag.ids=chain[0].id===idValue?chain.map(v=>v.id):[idValue];}}
 svg.addEventListener('pointerdown',e=>{
  const p=point(e);let kind=e.target.dataset.drag;
  if(s.mode==='force'&&['angle','position'].includes(kind)){const tip=svg.querySelector('circle[data-drag=angle]');if(tip){const originDistance=Math.hypot(p.x-X(s.pos),p.y-Y),tipDistance=Math.hypot(p.x-Number(tip.getAttribute('cx')),p.y-Number(tip.getAttribute('cy')));kind=originDistance<=32/touchScale()&&originDistance<tipDistance?'position':'angle';}}
@@ -83,7 +83,7 @@ document.addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;
  if(['weight','new-weight'].includes(d.kind)){
   previewDrop(e);
-  if(d.moved){if(d.kind==='weight'){const w=s.weights.find(w=>w.id===d.id);if(w&&d.returning){s.weights=s.weights.filter(v=>v.id!==d.id);s.selected=null;}else if(w&&d.valid){w.pos=d.previewPos;s.weights=s.weights.filter(v=>v!==w).concat(w);}}else if(d.valid)place(d.previewPos,d.item);}
+  if(d.moved){if(d.kind==='weight'){const w=s.weights.find(w=>w.id===d.id);if(w&&d.returning){s.weights=s.weights.filter(v=>!d.ids.includes(v.id));s.selected=null;}else if(w&&d.valid){const moving=s.weights.filter(v=>d.ids.includes(v.id));moving.forEach(v=>v.pos=d.previewPos);s.weights=s.weights.filter(v=>!d.ids.includes(v.id)).concat(moving);}}else if(d.valid)place(d.previewPos,d.item);}
   else if(d.kind==='new-weight')s.adding=s.adding===d.item?false:d.item;
  }
  drag=null;floating.hidden=true;ui();
